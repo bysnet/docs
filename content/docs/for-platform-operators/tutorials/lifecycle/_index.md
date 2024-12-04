@@ -60,7 +60,7 @@ Now that you’re set up, let’s build our `Bash` application and dive deeper i
 As a starting step, you need to build the `lifecycle` in order to use its phases. This could be done by navigating to the `lifecycle` directory and executing one of the following commands, depending on your system architecture.
 
 * `make build-linux-amd64` for `AMD64` architectures (for Linux users)
-* `make build-darwin-arm64` for `ARM64` architectures (for Mac users)
+* `make build-darwin-arm64 && make build-linux-arm64-launcher` for `ARM64` architectures (for Mac users)
 
 <!-- test:exec -->
 <!--
@@ -139,7 +139,7 @@ cp -r "/tmp/tutorial/samples/apps/bash-script" ./apps/
 Now, you can invoke the `analyzer` for `AMD64` architecture
 
 ```text
-${CNB_LIFECYCLE_PATH}/analyzer -log-level debug -daemon -layers="./layers" -run-image cnbs/sample-stack-run:jammy apps/bash-script
+${CNB_LIFECYCLE_PATH}/analyzer -log-level debug -daemon -layers="./layers" -run-image cnbs/sample-stack-run:noble apps/bash-script
 ```
 
 <!-- test:exec -->
@@ -175,6 +175,7 @@ In this tutorial, there is no previous `apps/bash-script` image, and the output 
 
 <!-- test:assert=contains;ignore-lines=... -->
 ```text
+
 ...
 Starting analyzer...
 Parsing inputs...
@@ -182,10 +183,10 @@ Ensuring privileges...
 Executing command...
 ...
 Image with name "apps/bash-script" not found
-Image with name "cnbs/sample-stack-run:jammy" not found
-...
+Image with name "cnbs/sample-stack-run:noble" not found
+Timer: Analyzer ran for 41.92µs and ended at 2024-09-30T07:38:14Z
 Run image info in analyzed metadata is: 
-{"Reference":"","Image":"cnbs/sample-stack-run:jammy","Extend":false,"target":{"os":"linux","arch":"amd64"}}
+{"Reference":"","Image":"cnbs/sample-stack-run:noble","Extend":false,"target":{"os":"linux","arch":"amd64"}}
 ```
 
 Now if you `cat ./layers/analyzed.toml`, you should see a few null entries, a `run-image` section that records the provided name provided, and the found `os/arch`.
@@ -195,7 +196,7 @@ Now if you `cat ./layers/analyzed.toml`, you should see a few null entries, a `r
 In this phase, the `detector` looks for an ordered group of buildpacks that will be used during the `build` phase. The `detector` requires an `order.toml` file to be provided. We can derive an order from `builder.toml` in the `samples` directory while removing the deprecated `stack` section as follows:
 
 ```text
-cat "${CNB_SAMPLES_PATH}/builders/jammy/builder.toml" | grep -v -i "stack" | sed 's/\.\.\/\.\./\./' > order.toml
+cat "${CNB_SAMPLES_PATH}/builders/noble/builder.toml" | grep -v -i "stack" | sed 's/\.\.\/\.\./\./' > order.toml
 
 ```
 
@@ -219,6 +220,7 @@ Before running the `detector`, you need to:
 
     ```command
     $ go install github.com/tomwright/dasel/v2/cmd/dasel@master
+    ```
 
     Let’s do that for every buildpack in the `samples/buildpacks` directory:
 
@@ -296,7 +298,7 @@ Ensuring privileges...
 Executing command...
 No run metadata found at path "/cnb/run.toml"
 Run image info in analyzed metadata is: 
-{"Reference":"","Image":"cnbs/sample-stack-run:jammy","Extend":false,"target":{"os":"linux","arch":"amd64"}}
+{"Reference":"","Image":"cnbs/sample-stack-run:noble","Extend":false,"target":{"os":"linux","arch":"amd64"}}
 Timer: Restorer started at 2024-10-01T07:03:47Z
 Restoring Layer Metadata
 Reading buildpack directory: /tmp/example/layers/samples_hello-world
@@ -473,8 +475,43 @@ Finally, you can run the exported image as follows:
 docker run -it apps/bash-script ./app.sh
 ```
 
+The output should look similar to the following:
+
 ```text
-OUTPUT PLACEHOLDER
+
+    |'-_ _-'|       ____          _  _      _                      _             _
+    |   |   |      |  _ \        (_)| |    | |                    | |           (_)
+     '-_|_-'       | |_) | _   _  _ | |  __| | _ __    __ _   ___ | | __ ___     _   ___
+|'-_ _-'|'-_ _-'|  |  _ < | | | || || | / _` ||'_ \  / _\ | / __|| |/ // __|   | | / _ \
+|   |   |   |   |  | |_) || |_| || || || (_| || |_) || (_| || (__ |   < \__ \ _ | || (_) |
+ '-_|_-' '-_|_-'   |____/  \__,_||_||_| \__,_|| .__/  \__,_| \___||_|\_\|___/(_)|_| \___/
+                                              | |
+                                              |_|
+
+
+Here are the contents of the current working directory:
+.:
+total 24
+drwxr-xr-x 3 502 dialout 4096 Jan  1  1980 .
+drwxr-xr-x 1 502 root    4096 Jan  1  1980 ..
+-rw-r--r-- 1 502 dialout  692 Jan  1  1980 README.md
+-rwxr-xr-x 1 502 dialout  736 Jan  1  1980 app.sh
+drwxr-xr-x 3 502 dialout 4096 Jan  1  1980 bash-script-buildpack
+-rw-r--r-- 1 502 dialout  202 Jan  1  1980 project.toml
+
+./bash-script-buildpack:
+total 16
+drwxr-xr-x 3 502 dialout 4096 Jan  1  1980 .
+drwxr-xr-x 3 502 dialout 4096 Jan  1  1980 ..
+drwxr-xr-x 2 502 dialout 4096 Jan  1  1980 bin
+-rw-r--r-- 1 502 dialout  226 Jan  1  1980 buildpack.toml
+
+./bash-script-buildpack/bin:
+total 16
+drwxr-xr-x 2 502 dialout 4096 Jan  1  1980 .
+drwxr-xr-x 3 502 dialout 4096 Jan  1  1980 ..
+-rwxr-xr-x 1 502 dialout  345 Jan  1  1980 build
+-rwxr-xr-x 1 502 dialout  242 Jan  1  1980 detect
 ```
 
 ## Wrapping up
